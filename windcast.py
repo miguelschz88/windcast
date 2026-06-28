@@ -15,6 +15,50 @@ import motor   # nuestras funciones del motor
 
 st.set_page_config(page_title="WindCast", page_icon="🌬️", layout="wide")
 
+# --- Logo de WindCast (SVG embebido) ---
+LOGO_SVG = """
+<svg width="160" height="160" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="95" fill="#21295C"/>
+  <circle cx="100" cy="100" r="95" fill="#1C7293" opacity="0.25"/>
+  <path d="M 96 160 L 104 160 L 102 95 L 98 95 Z" fill="#FFFFFF"/>
+  <g transform="translate(100 92)">
+    <path d="M 0 0 L -5 -8 L -1.5 -56 L 0 -60 L 1.5 -56 L 5 -8 Z" fill="#02C39A"/>
+    <path d="M 0 0 L 9 -3 L 52 25 L 55 30 L 49 30 L 7 6 Z" fill="#02C39A"/>
+    <path d="M 0 0 L -9 -3 L -52 25 L -55 30 L -49 30 L -7 6 Z" fill="#02C39A"/>
+    <circle cx="0" cy="0" r="7" fill="#FFFFFF"/>
+    <circle cx="0" cy="0" r="3.5" fill="#21295C"/>
+  </g>
+</svg>
+"""
+
+# --- CSS personalizado para mejorar la jerarquía visual ---
+st.markdown("""
+<style>
+    /* Títulos principales más prominentes */
+    .stApp h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #21295C;
+    }
+    .stApp h2 { font-size: 1.6rem; color: #21295C; }
+    .stApp h3 { font-size: 1.25rem; color: #065A82; }
+
+    /* Botones de la barra lateral más grandes y visibles */
+    section[data-testid="stSidebar"] button {
+        font-size: 1.05rem;
+        font-weight: 600;
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+    }
+
+    /* Métricas más legibles */
+    div[data-testid="stMetricValue"] { font-size: 1.8rem; }
+
+    /* Un poco más de aire entre secciones */
+    .stApp [data-testid="stVerticalBlock"] { gap: 0.6rem; }
+</style>
+""", unsafe_allow_html=True)
+
 
 # --- Funciones auxiliares para manejar parques ---
 def listar_parques():
@@ -93,11 +137,81 @@ def validar_tramos(tabla, campo_valor, valor_min, valor_max, etiqueta_valor,
     return errores, advertencias
 
 
-# --- Barra lateral: selección de modo ---
-st.sidebar.title("🌬️ WindCast")
-st.sidebar.caption("Pronóstico de producción eólica con IA")
-modo = st.sidebar.radio("Selecciona un modo:",
-                        ["⚙️ Configuración", "📊 Predicción"])
+# --- Barra lateral: logo y selección de modo ---
+# Estado de navegación: el modo por defecto es "Inicio"
+if "modo_app" not in st.session_state:
+    st.session_state.modo_app = "🏠 Inicio"
+
+with st.sidebar:
+    # Logo centrado
+    st.markdown(f'<div style="text-align:center; margin-bottom:0.5rem;">{LOGO_SVG}</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div style="text-align:center; font-size:1.4rem; font-weight:700; '
+                'color:#21295C; margin-bottom:0.2rem;">WindCast</div>',
+                unsafe_allow_html=True)
+    st.markdown('<div style="text-align:center; font-size:0.85rem; color:#1C7293; '
+                'margin-bottom:1.2rem;">Pronóstico de energía eólica</div>',
+                unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Botones de navegación (grandes)
+    if st.button("🏠 Inicio", use_container_width=True):
+        st.session_state.modo_app = "🏠 Inicio"
+    if st.button("📊 Predicción", use_container_width=True):
+        st.session_state.modo_app = "📊 Predicción"
+    if st.button("⚙️ Configuración", use_container_width=True):
+        st.session_state.modo_app = "⚙️ Configuración"
+
+modo = st.session_state.modo_app
+
+
+# ============================================
+# PANTALLA DE INICIO
+# ============================================
+if modo == "🏠 Inicio":
+    # Logo grande centrado
+    st.markdown(f'<div style="text-align:center; margin:1rem 0;">{LOGO_SVG}</div>',
+                unsafe_allow_html=True)
+    st.markdown('<h1 style="text-align:center; color:#21295C;">WindCast</h1>',
+                unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center; font-size:1.2rem; color:#1C7293;">'
+                'Pronóstico de producción de energía eólica</p>',
+                unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    st.markdown("### ¿Qué hace WindCast?")
+    st.write(
+        "WindCast estima la producción de energía de un parque eólico combinando "
+        "pronósticos meteorológicos en tiempo real con un modelo entrenado a partir "
+        "de datos históricos de las turbinas. Permite anticipar cuánta energía "
+        "generará el parque en los próximos días, considerando situaciones reales "
+        "de operación como turbinas en mantenimiento o límites de la red eléctrica.")
+
+    st.markdown("### ¿Cómo se usa?")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("#### 📊 Predicción")
+        st.write("Genera el pronóstico de producción de un parque ya configurado. "
+                 "Ajusta el periodo, la disponibilidad de turbinas y las "
+                 "restricciones de red, y visualiza los resultados.")
+        if st.button("Ir a Predicción", use_container_width=True, key="ir_pred"):
+            st.session_state.modo_app = "📊 Predicción"
+            st.rerun()
+    with c2:
+        st.markdown("#### ⚙️ Configuración")
+        st.write("Crea un parque nuevo: define su ubicación y sus grupos de "
+                 "aerogeneradores con sus curvas de potencia. El parque queda "
+                 "disponible para generar pronósticos.")
+        if st.button("Ir a Configuración", use_container_width=True, key="ir_config"):
+            st.session_state.modo_app = "⚙️ Configuración"
+            st.rerun()
+
+    st.markdown("---")
+    st.caption("Proyecto desarrollado para la Maestría en Inteligencia Artificial "
+               "y Ciencia de Datos.")
+
 
 # ============================================
 # MODO CONFIGURACIÓN
